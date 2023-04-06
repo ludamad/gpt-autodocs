@@ -1,4 +1,4 @@
-import ts, { SyntaxKind } from "typescript";
+import ts from "typescript";
 import * as fs from "fs";
 import * as readline from "readline";
 import { ChatGPTAPI } from "chatgpt";
@@ -53,6 +53,7 @@ function addJSDoc(node: ts.Node, sourceFile: ts.SourceFile) {
     [ts.isFunctionDeclaration(node), FUNC_PROMPT],
     [ts.isInterfaceDeclaration(node), INTERFACE_PROMPT],
     [ts.isPropertyDeclaration(node), FIELD_PROMPT],
+    [ts.isPropertySignature(node), FIELD_PROMPT],
     [ts.isParameterPropertyDeclaration(node, node.parent), FIELD_PROMPT],
     [ts.isTypeAliasDeclaration(node), TYPE_PROMPT],
   ] as const;
@@ -62,13 +63,14 @@ function addJSDoc(node: ts.Node, sourceFile: ts.SourceFile) {
       if (!name) {
         return;
       }
+      // Hacky code to narrow down to public fields
       if (
         ts.isPropertyDeclaration(node) ||
         ts.isParameterPropertyDeclaration(node, node.parent)
       ) {
         let isPublic = false;
         for (const modifier of node.modifiers || []) {
-          if (modifier.kind === SyntaxKind.PublicKeyword) {
+          if (modifier.kind === ts.SyntaxKind.PublicKeyword) {
             isPublic = true;
             break;
           }
