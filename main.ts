@@ -1,7 +1,22 @@
 import ts from "typescript";
 import * as fs from "fs";
-import { api } from "./gpt.js";
 import * as readline from "readline";
+import { ChatGPTAPI } from "chatgpt";
+
+if (!process.env.CHATGPT_API_KEY) {
+  throw new Error(
+    "You need to set CHATGPT_API_KEY with a GPT API key. If a hassle, you can bug Adam for his."
+  );
+}
+
+export const api = new ChatGPTAPI({
+  apiKey: process.env.CHATGPT_API_KEY,
+  completionParams: {
+    model: "gpt-4",
+  },
+  maxModelTokens: 7192, // Must equal maxModelTokens + maxReponseTokens <= 8192
+  maxResponseTokens: 1000,
+});
 
 let sourceCode: string;
 const foo = () => {};
@@ -115,6 +130,7 @@ async function main() {
     //    resolve();
     //  })
     //);
+    console.log("considering " + fileName);
     // Use the function to update a TypeScript file
     await updateSourceFile(fileName);
   }
