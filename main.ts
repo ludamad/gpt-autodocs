@@ -54,7 +54,9 @@ function addJSDoc(node: ts.Node, sourceFile: ts.SourceFile) {
   if (
     ts.isClassDeclaration(node) ||
     ts.isMethodDeclaration(node) ||
-    ts.isFunctionDeclaration(node)
+    ts.isFunctionDeclaration(node) ||
+    ts.isInterfaceDeclaration(node) ||
+    ts.isPropertyDeclaration(node)
   ) {
     const name = (node as any).name?.getText(sourceFile);
     if (!name) {
