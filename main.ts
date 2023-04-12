@@ -2,7 +2,6 @@ import ts from "typescript";
 import * as fs from "fs";
 import * as readline from "readline";
 import { ChatGPTAPI } from "chatgpt";
-import { ModifierFlags } from "typescript";
 import {
   CLASS_PROMPT,
   FIELD_PROMPT,
@@ -26,12 +25,40 @@ export const api = new ChatGPTAPI({
   maxResponseTokens: 1000,
 });
 
+function extractSnippet(sourceCode: string, pos: number) {
+  const maxLength = 7192 * 3;
+  const halfLength = Math.floor(maxLength / 2);
+
+  if (sourceCode.length <= maxLength) {
+    return sourceCode;
+  }
+
+  let start = pos - halfLength;
+  let end = pos + halfLength;
+
+  if (start < 0) {
+    end -= start;
+    start = 0;
+  }
+
+  if (end > sourceCode.length) {
+    const diff = end - sourceCode.length;
+    start -= diff;
+    end = sourceCode.length;
+    if (start < 0) {
+      start = 0;
+    }
+  }
+
+  return sourceCode.substring(start, end);
+}
+
 let sourceCode: string;
-const foo = () => {};
-async function getAIResult(func: string, prompt: string) {
+async function getAIResult(position: number, prompt: string) {
   let writeLength = 0;
+  const sourceCodeSnippet = extractSnippet(sourceCode, position);
   const res = await api.sendMessage(prompt, {
-    systemMessage: `Work on this source code: ${sourceCode}`,
+    systemMessage: `Work on this source code: ${sourceCodeSnippet}`,
     onProgress(partialResponse) {
       let output = partialResponse.text;
       let newOutput = output.substring(writeLength);
@@ -84,7 +111,7 @@ function addJSDoc(node: ts.Node, sourceFile: ts.SourceFile) {
         const existingJSDoc = ts.getLeadingCommentRanges(sourceCode, node.pos);
 
         if (!existingJSDoc || existingJSDoc.length === 0) {
-          const jsdoc = (await getAIResult(name, promptFn(name))).trim();
+          const jsdoc = (await getAIResult(node.pos, promptFn(name))).trim();
           return { pos: node.pos, jsdoc };
         }
         return null;
