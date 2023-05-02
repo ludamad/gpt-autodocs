@@ -15,6 +15,7 @@ if (!process.env.CHATGPT_API_KEY) {
     "You need to set CHATGPT_API_KEY with a GPT API key. If a hassle, you can bug Adam for his."
   );
 }
+let remainingUpdates = process.env.CHATGPT_UPDATES ? +process.env.CHATGPT_UPDATES : 1;
 
 export const api = new ChatGPTAPI({
   apiKey: process.env.CHATGPT_API_KEY,
@@ -136,9 +137,12 @@ async function updateSourceFile(sourceFilePath: string) {
 
   const jsdocUpdates: any[] = [];
   for (const p of promiseQueue) {
-    const update = await p();
-    if (update) {
-      jsdocUpdates.push(update);
+    if (remainingUpdates > 0) {
+      const update = await p();
+      if (update) {
+          jsdocUpdates.push(update);
+          remainingUpdates--;
+      }
     }
   }
 
@@ -163,6 +167,7 @@ async function updateSourceFile(sourceFilePath: string) {
   if (jsdocUpdates.length > 0) {
     fs.writeFileSync(sourceFilePath, sourceCode);
   }
+  console.log("DONE " + sourceFilePath);
 }
 
 async function main() {
